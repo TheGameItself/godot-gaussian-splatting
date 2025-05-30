@@ -1,8 +1,13 @@
+# TODO: Always try to apply changes when possible. If not possible, try anyway and document the result.
+# Reminder: After any code change, test and document it.
+
+print("[DEBUG] Development loop: change applied at top of main.gd")
+
 extends Node3D
 
 @onready var camera = get_node("Camera")
 @onready var screen_texture = get_node("TextureRect")
-@export var splat_filename: String = "train.ply"
+@export var splat_filename: String = r"C:\Users\basti\Documents\GodotProjects\godot-gaussian-splatting-main\Testing Data\3DGS_PLY_sample_data\PLY(postshot)\cactus_splat3_30kSteps_719k_splats.ply"
 
 var rd = RenderingServer.get_rendering_device()
 var pipeline: RID
@@ -15,7 +20,7 @@ var vertex_array: RID
 var index_array: RID
 var static_uniform_set: RID
 var dynamic_uniform_set: RID
-var clear_color_values := PackedColorArray([Color(0,0,0,0)])
+var clear_color_values := PackedColorArray([Color(1,0,1,1)]) # Experiment: magenta clear color for debug, revert if needed
 
 var cull_uniform_set1: RID
 var cull_uniform_set2: RID
@@ -61,6 +66,19 @@ var vertices: PackedFloat32Array
 const NUM_BLOCKS_PER_WORKGROUP = 1024
 var NUM_WORKGROUPS
 
+var log_file_path := "run_log.txt"
+var log_file: FileAccess = null
+
+var last_frame_log_time := 0
+var frame_count := 0
+var last_fps_log_time := 0
+
+func log_event(event: String):
+	var timestamp = Time.get_ticks_msec()
+	if log_file == null:
+		log_file = FileAccess.open(log_file_path, FileAccess.WRITE)
+	log_file.store_line("[%s ms] %s" % [timestamp, event])
+	log_file.flush()
 
 func _matrix_to_bytes(t : Transform3D):
 	var basis : Basis = t.basis
@@ -84,6 +102,7 @@ func _load_ply_file():
 
 	if not file:
 		print("Failed to open file: " + splat_filename)
+		log_error("Failed to open file: %s" % splat_filename)
 		return
 
 	var num_properties = 0
@@ -102,6 +121,7 @@ func _load_ply_file():
 	
 	vertices = file.get_buffer(num_vertex * num_properties * 4).to_float32_array()
 	file.close()
+	print("First 10 vertex values: ", vertices.slice(0, 10))
 	
 
 func _initialise_framebuffer_format():
@@ -129,13 +149,21 @@ func _initialise_framebuffer_format():
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	print("[DEBUG] _ready() called")
+	log_file = FileAccess.open(log_file_path, FileAccess.WRITE)
+	log_event("Startup: _ready() called")
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
-	print("unpacking .ply file data...")
-	_load_ply_file()	
+	print("[DEBUG] Unpacking .ply file data...")
+	log_event("Begin loading PLY file: %s" % splat_filename)
+	_load_ply_file()
+	print("[DEBUG] Loaded vertices count: ", vertices.size())
 	
-	print("configuring shaders...")
+	print("[DEBUG] Configuring shaders and buffers...")
+	log_event("Configuring shaders and buffers")
 	var vertices_buffer = rd.storage_buffer_create(vertices.size() * 4, vertices.to_byte_array())
+	print("vertices_buffer RID: ", vertices_buffer, " size: ", vertices.size() * 4)
+	log_event("Created vertices buffer")
 	
 	var vertices_uniform = RDUniform.new()
 	vertices_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
@@ -159,6 +187,7 @@ func _ready():
 		sh_degree,
 	]).to_byte_array()
 	params_buffer = rd.storage_buffer_create(params.size(), params)
+	print("params_buffer RID: ", params_buffer, " size: ", params.size())
 	var params_uniform := RDUniform.new()
 	params_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	params_uniform.binding = 1
@@ -274,7 +303,7 @@ func _ready():
 
 	var framebuffer_format = _initialise_framebuffer_format()
 	framebuffer = rd.framebuffer_create([output_tex], framebuffer_format)
-	print("framebuffer valid: ",rd.framebuffer_is_valid(framebuffer))
+	print("[DEBUG] framebuffer valid: ",rd.framebuffer_is_valid(framebuffer))
 	
 
 	cull_buffer = rd.storage_buffer_create(num_vertex * 2 * 4)
@@ -340,12 +369,10 @@ func _ready():
 	cull_uniform_set2 = rd.uniform_set_create(static_bindings, cull_shader, 1)
 	
 	
-	print("render pipeline valid: ", rd.render_pipeline_is_valid(pipeline))
-	print("compute1 pipeline valid: ", rd.compute_pipeline_is_valid(sort_pipeline))
-	print("visible compute pipeline valid: ", rd.compute_pipeline_is_valid(cull_pipeline))
-	
-	
-	# Do once to ensure splat drawn in correct order at start
+	print("[DEBUG] render pipeline valid: ", rd.render_pipeline_is_valid(pipeline))
+	print("[DEBUG] compute1 pipeline valid: ", rd.compute_pipeline_is_valid(sort_pipeline))
+	print("[DEBUG] visible compute pipeline valid: ", rd.compute_pipeline_is_valid(cull_pipeline))
+	print("[DEBUG] Calling update, render, compute_depth_and_visibility, radix_sort...")
 	update()
 	render()
 	compute_depth_and_visibility()
@@ -445,7 +472,8 @@ func radix_sort():
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func update():	
+func update():
+	print("[DEBUG] update() called")
 	# Camera Matrices Buffer
 	var camera_matrices_bytes := PackedByteArray()
 	camera_matrices_bytes.append_array(_matrix_to_bytes(camera.global_transform.affine_inverse()))
@@ -469,22 +497,39 @@ func update():
 		sh_degree,
 	]).to_byte_array()
 	rd.buffer_update(params_buffer, 0, params.size(), params)
-	
+	print("[DEBUG] update() - viewport size: ", get_viewport().size, " modifier: ", modifier, " sh_degree: ", sh_degree)
 	_sort_splats_by_depth()
 	
 
 func render():
-	var draw_list := rd.draw_list_begin(framebuffer, RenderingDevice.DRAW_CLEAR_COLOR_ALL, clear_color_values)
+	print("[DEBUG] render() called. visible_count: ", visible_count)
+	# Use integer values for initial/final actions if enums are not available in this Godot version
+	var draw_list := rd.draw_list_begin(
+		framebuffer,
+		RenderingDevice.INITIAL_ACTION_CLEAR if "INITIAL_ACTION_CLEAR" in RenderingDevice else 1, # initial color action: Clear
+		RenderingDevice.FINAL_ACTION_STORE if "FINAL_ACTION_STORE" in RenderingDevice else 3,     # final color action: Store
+		RenderingDevice.INITIAL_ACTION_CLEAR if "INITIAL_ACTION_CLEAR" in RenderingDevice else 1, # initial depth action: Clear
+		RenderingDevice.FINAL_ACTION_STORE if "FINAL_ACTION_STORE" in RenderingDevice else 3,     # final depth action: Store
+		clear_color_values
+	)
+	print("[DEBUG] Binding render pipeline and uniforms...")
 	rd.draw_list_bind_render_pipeline(draw_list, pipeline)
 	rd.draw_list_bind_uniform_set(draw_list, dynamic_uniform_set, 0)
 	rd.draw_list_bind_uniform_set(draw_list, static_uniform_set, 1)
 	rd.draw_list_bind_vertex_array(draw_list, vertex_array)
+	print("[DEBUG] Drawing with visible_count: ", visible_count)
 	rd.draw_list_draw(draw_list, false, visible_count)
 	rd.draw_list_end()
 
 func _process(delta):	
 	update()
 	render()
+	frame_count += 1
+	var now = Time.get_ticks_msec()
+	if now - last_frame_log_time > 1000:
+		log_event("Frame time: %s ms, FPS: %s" % [str(delta * 1000.0), str(frame_count)])
+		last_frame_log_time = now
+		frame_count = 0
 	
 	
 func _input(event):
@@ -509,5 +554,10 @@ func _sort_splats_by_depth():
 		radix_sort()
 		last_direction = new_direction
 		last_position = new_position
+
+		
+
+func log_error(msg: String):
+	log_event("ERROR: %s" % msg)
 
 		

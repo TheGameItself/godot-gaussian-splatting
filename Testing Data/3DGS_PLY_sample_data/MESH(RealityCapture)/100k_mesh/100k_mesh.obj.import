@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://531msgwvuyr3"
+path="res://.godot/imported/100k_mesh.obj-3bc0e14a156d5b7ec00b2e1ca9afc7f9.mesh"
+
+[deps]
+
+files=["res://.godot/imported/100k_mesh.obj-3bc0e14a156d5b7ec00b2e1ca9afc7f9.mesh"]
+
+source_file="res://Testing Data/3DGS_PLY_sample_data/MESH(RealityCapture)/100k_mesh/100k_mesh.obj"
+dest_files=["res://.godot/imported/100k_mesh.obj-3bc0e14a156d5b7ec00b2e1ca9afc7f9.mesh", "res://.godot/imported/100k_mesh.obj-3bc0e14a156d5b7ec00b2e1ca9afc7f9.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

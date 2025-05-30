@@ -1,0 +1,177 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Godot Debugging, Development, and Rule Updating: Branching/Looping Decision Table
+
+## Entry Point: Start Workflow
+- **Condition:** New task, bug, or feature
+  - **Action:** Go to [Development Loop]
+
+## Development Loop
+- **Condition:** Code change or new feature
+  - **Action:**
+    - Implement code or fix
+    - Set reminder to test and document
+  - **Branch:**
+    - After code change → Go to [Debugging Loop]
+
+## Debugging Loop
+- **Condition:** Need to test or debug
+  - **Action:**
+    - Run project (omit `--editor` for live debug output)
+    - Use print statements, Output panel, Debugger panel, and breakpoints
+  - **Branch:**
+    - If test passes → Go to [Review/Commit]
+    - If test fails → Go to [Error Handling]
+    - If output missing → Go to [Error Handling]
+    - If mistake/oversight found → Go to [Meta-Reminder Loop]
+
+## Error Handling
+- **Condition:** Test or debug step fails, or output is missing
+  - **Action:**
+    - Check for syntax, logic, or command issues (e.g., missing `&`, wrong path)
+    - Reference [Godot Debugging Tools Overview](mdc:https:/docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
+  - **Branch:**
+    - If fixed → Loop back to [Debugging Loop]
+    - If not fixed → Go to [Meta-Reminder Loop]
+
+## Review/Commit
+- **Condition:** Tests pass and code is ready
+  - **Action:**
+    - Review code, document changes, and commit
+    - Set reminder to monitor deployment/logs if applicable
+  - **Branch:**
+    - If new issues arise after commit → Go to [Debugging Loop]
+    - If no issues → Go to [Exit/Continuous Improvement]
+
+## Meta-Reminder Loop
+- **Condition:** Mistake, oversight, or missing reminder discovered
+  - **Action:**
+    - Add or update reminders, checklists, or rules
+    - Document the new scenario or fix
+  - **Branch:**
+    - After updating reminders/rules → Loop back to [Development Loop] or [Debugging Loop] as appropriate
+
+## Exit/Continuous Improvement
+- **Condition:** Task/feature complete, or workflow finished
+  - **Action:**
+    - Review process and rules for gaps or improvements
+    - Update this decision table if new scenarios or best practices are found
+  - **Branch:**
+    - If new rule needed → Go to [Meta-Reminder Loop]
+    - If no update needed → End
+
+## Debug-First Workflow (Update)
+- **Condition:** About to make an experimental or visual change
+  - **Action:**
+    - First, debug and validate the current project state.
+    - If the project is broken, prioritize fixing or understanding the issue before experimenting.
+    - Only proceed with experiments if the project is stable or the broken state is intentional and documented.
+    - If debugging fails, revert to the last known good state and document the attempt.
+    - Remind: Breaking changes are allowed, but only after confirming the current state is understood.
+    - Always document what was tried, what worked, and what didn't.
+
+## Efficient Branching Conditionals (Update)
+
+### Debugging Loop
+- **Condition:** Project fails to start
+  - **Action:**
+    - Check for syntax errors or missing files
+    - If file not found → Go to [File Not Found]
+    - If syntax error → Go to [Syntax Error]
+    - If crash with error message → Go to [Crash/Error Message]
+    - If no output at all → Go to [No Output]
+
+- **Condition:** Project starts but visual output is missing or wrong
+  - **Action:**
+    - Check for shader compile errors
+    - If shader error → Go to [Shader Error]
+    - If empty data (e.g., vertices.size() == 0) → Go to [Empty Data]
+    - If black/magenta screen → Go to [Framebuffer/Render Error]
+    - If partial output → Go to [Partial Output]
+
+- **Condition:** Error or warning in console
+  - **Action:**
+    - If file load error → Go to [File Not Found]
+    - If buffer or pipeline error → Go to [Pipeline Error]
+    - If unknown error → Go to [General Error Handling]
+
+### File Not Found
+- **Action:**
+    - Check file path and existence
+    - Fix path or add missing file
+    - Retry
+
+### Syntax Error
+- **Action:**
+    - Fix syntax in code
+    - Retry
+
+### Crash/Error Message
+- **Action:**
+    - Read and document error message
+    - Search for known issues or ask for help
+    - Fix and retry
+
+### No Output
+- **Action:**
+    - Check if main scene and scripts are attached
+    - Add debug prints at entry points
+    - Retry
+
+### Shader Error
+- **Action:**
+    - Check shader code and logs
+    - Fix errors and retry
+
+### Empty Data
+- **Action:**
+    - Check file parsing and data loading
+    - Add debug prints for data size
+    - Fix and retry
+
+### Framebuffer/Render Error
+- **Action:**
+    - Check render pipeline and framebuffer setup
+    - Add debug prints for pipeline validity
+    - Fix and retry
+
+### Partial Output
+- **Action:**
+    - Check for missing or incomplete data
+    - Add debug prints for draw calls and counts
+    - Fix and retry
+
+### Pipeline Error
+- **Action:**
+    - Check buffer and pipeline creation
+    - Add debug prints for RIDs and validity
+    - Fix and retry
+
+### General Error Handling
+- **Action:**
+    - Document the error
+    - Try a minimal reproducible example
+    - Ask for help if stuck
+    - Retry
+
+---
+
+**Notes:**
+- Each loop (Development, Debugging, Meta-Reminder) can repeat as many times as needed until the exit condition is met.
+- This structure is modular: add new branches for new workflows, tools, or error types as needed.
+- Always document new lessons and codify them as rules or reminders for future cycles.
+- Use TODOs, checklists, and project management tools to make reminders actionable and visible.
+
+
+
+
+
+
+
+
+
+
+
